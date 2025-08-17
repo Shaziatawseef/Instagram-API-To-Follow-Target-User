@@ -1,1 +1,0 @@
-web: uvicorn Instagram-API-to-Follow-Target-User:app --host 0.0.0.0 --port 10000
