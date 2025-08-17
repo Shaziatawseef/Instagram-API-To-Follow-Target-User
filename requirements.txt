@@ -1,3 +1,4 @@
+--use-deprecated=legacy-resolver
 fastapi==0.85.1
 uvicorn==0.20.0
 instagrapi==1.19.6
