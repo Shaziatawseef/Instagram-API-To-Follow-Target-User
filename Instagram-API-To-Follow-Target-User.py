@@ -15,7 +15,7 @@ def get_client(sessionid: str) -> Client:
     return cl
 
 
-@app.route("/follow", methods=["GET"])
+@app.route("/instagram", methods=["GET"])
 def follow_user():
     sessionid = request.args.get("sessionid")
     user_id = request.args.get("id")
