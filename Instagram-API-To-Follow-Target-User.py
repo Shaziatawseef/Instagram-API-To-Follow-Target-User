@@ -46,7 +46,7 @@ def follow_user():
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
-        "message": "Instagram Follow API is running. Use /follow?sessionid=...&id=..."
+        "message": "Instagram Follow API is running. Use /instagram?sessionid=...&id=..."
     })
 
 
