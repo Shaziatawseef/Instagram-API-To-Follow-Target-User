@@ -1,45 +1,55 @@
-from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
+from flask import Flask, request, jsonify
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, UserNotFound, PleaseWaitFewMinutes
-import uvicorn
+import os
 
-app = FastAPI(title="Instagram Follow API", description="API to follow Instagram users using instagrapi")
+app = Flask(__name__)
 
 
-@app.get("/instagram")
-def follow_user(
-    sessionid: str = Query(..., description="Instagram sessionid cookie"),
-    id: str = Query(..., description="Instagram user id or username")
-):
+def get_client(sessionid: str) -> Client:
+    """Initialize and return an Instagrapi client with sessionid."""
+    cl = Client()
     try:
-        cl = Client()
         cl.login_by_sessionid(sessionid)
+    except Exception as e:
+        raise ValueError(f"Invalid sessionid or login failed: {str(e)}")
+    return cl
 
-        # If user provided username instead of pk/id
-        if id.isdigit():
-            user_id = int(id)
-        else:
-            user_id = cl.user_id_from_username(id)
 
-        result = cl.user_follow(user_id)
+@app.route("/follow", methods=["GET"])
+def follow_user():
+    sessionid = request.args.get("sessionid")
+    user_id = request.args.get("id")
 
-        return JSONResponse({
-            "status": "success",
-            "message": f"Followed user {id}",
-            "user_id": user_id,
+    if not sessionid or not user_id:
+        return jsonify({
+            "success": False,
+            "error": "Missing required query parameters: sessionid and id"
+        }), 400
+
+    try:
+        cl = get_client(sessionid)
+        result = cl.user_follow(int(user_id))
+
+        return jsonify({
+            "success": True,
+            "followed_user_id": user_id,
             "result": result
         })
 
-    except LoginRequired:
-        return JSONResponse({"status": "error", "message": "Invalid sessionid, login required"}, status_code=401)
-    except UserNotFound:
-        return JSONResponse({"status": "error", "message": "User not found"}, status_code=404)
-    except PleaseWaitFewMinutes:
-        return JSONResponse({"status": "error", "message": "Rate limited by Instagram, please wait"}, status_code=429)
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "message": "Instagram Follow API is running. Use /follow?sessionid=...&id=..."
+    })
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
